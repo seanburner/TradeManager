@@ -1,4 +1,4 @@
-name: Day_Trade Test
+name: TradeManager Test
 
 on: [push, pull_request]
 
@@ -19,8 +19,5 @@ jobs:
         with:
           tox_env: py313,py312
           run: |
-            pip install poetry	
-            pip install pyjwt            
-            pip install httpx[http2]
-            pip install sqlalchemy
-            pip install fastapi
+    		python -m pip install --upgrade pip
+    		if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
