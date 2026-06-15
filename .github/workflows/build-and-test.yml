@@ -10,17 +10,17 @@ jobs:
       PIP_NO_CACHE_DIR: "1"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository  
+        uses: actions/checkout@v4
       - name: Run tox tests
         id: test
         # 💡 The action will now inherit the PIP_NO_CACHE_DIR environment variable
         uses: fedora-python/tox-github-action@main
         with:
           tox_env: py313,py312
-          dnf_install: |
-            poetry
-            pyjwt
-            calendar
-            htpx[http2]
-            sqlalchemy
-            fastapi
+          run: |
+            pip install poetry	
+            pip install pyjwt            
+            pip install httpx[http2]
+            pip install sqlalchemy
+            pip install fastapi
