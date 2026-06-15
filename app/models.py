@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 # CRITICAL IMPORT: Bring in Base from your database setup
 from app.database import Base
 
+
 class User(Base):
     __tablename__ = "members"
     __table_args__ = {"schema": "TradeManager"} # Explicitly tells the compiler: TradeManager.members
