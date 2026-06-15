@@ -9,6 +9,8 @@
 ##              source venv/bin/activate
 ##              pip install fastapi uvicorn jinja2 sqlalchemy authlib itsdangerous python-multipart
 ##              pip install "passlib[bcrypt]" pyjwt  pydantic_settings httpx[http2]
+##
+##              uvicorn main:app --reload
 ##  Notes   :   https://docs.python.org/3/tutorial/classes.html
 ## #############################################################################
 import os
@@ -40,6 +42,22 @@ Ticker_Map = {
     }
 
 
+
+
+"""
+import sys
+from importlib.metadata import version, PackageNotFoundError
+
+for module_name in sorted(sys.modules.keys()):
+    # Filter out sub-modules (e.g., 'os.path') to check the main package
+    main_package = module_name.split('.')[0]
+    try:
+        print(f"{main_package}: {version(main_package)}")
+    except PackageNotFoundError:
+        # Standard library modules or local project files won't have a pip version
+        pass
+exit
+"""
 # Automatically create the database tables in MariaDB if they don't exist
 #models.Base.metadata.create_all(bind=engine)
 

@@ -1,0 +1,24 @@
+[tool.poetry]
+name 		= "app"
+readme 		= "README.md"
+version 	= "0.1.0"
+authors 	= ["Sean A. Burner"]
+description 	= "TradeManager"
+
+[tool.poetry.dependencies]
+python   		= "^3.12"
+pyjwt                   = "^2.13"
+requests 		= "^2.34"
+httpx 	         	= "^0.28"
+yfinance  		= "^1.4"
+sqlalchemy        	= "^2.0"
+fastapi		      	= "^0.136"
+uvicorn 		= "^0.49"
+
+
+[tool.poetry.group.dev.dependencies]
+tox = "^4.26.0"
+pytest = "^8.3.5"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
