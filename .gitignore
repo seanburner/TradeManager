@@ -1,0 +1,5 @@
+# Ignore local environment variables
+.env
+
+# Ignore the artifact fold
+artifacts/
