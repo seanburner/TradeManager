@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6 text-white">User Settings</h1>
+
+    <div class="border-b border-gray-700 mb-6">
+        <nav class="flex space-x-4" aria-label="Tabs">
+            <button onclick="switchTab(event, 'profile-tab')" class="tab-btn px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-400 focus:outline-none" data-target="profile-tab">
+                User Profile
+            </button>
+            <button onclick="switchTab(event, 'risk-tab')" class="tab-btn px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-400 focus:outline-none" data-target="risk-tab">
+                Risk Management
+            </button>
+            <button onclick="switchTab(event, 'api-tab')" class="tab-btn px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-400 focus:outline-none" data-target="api-tab">
+                API Integration
+            </button>
+        </nav>
+    </div>
+
+    <form action="/settings/update" method="POST" class="space-y-6">
+        
+        <div id="profile-tab" class="tab-panel block">
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-white">Profile Information</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
+                        <input type="email" name="email" value="{{ user.email if user else '' }}" disabled class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-not-allowed">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="risk-tab" class="tab-panel hidden">
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-white">Trading Risk Control Rules</h2>
+                <p class="text-gray-400 text-sm mb-4">Define protection guardrails for execution logic modules.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Max Capital Allocation (%)</label>
+                        <input type="number" name="max_capital" step="0.1" placeholder="e.g. 10.0" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Hard Stop Loss Trigger (%)</label>
+                        <input type="number" name="stop_loss" placeholder="e.g. 25" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="api-tab" class="tab-panel hidden">
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-white">Brokerage & Data Credentials</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Schwab App API Key</label>
+                        <input type="password" name="schwab_key" placeholder="yUbefFOt..." class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Schwab Secret Key</label>
+                        <input type="password" name="schwab_secret" placeholder="••••••••••••••••" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+            <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow transition duration-150 ease-in-out">
+                Save Adjustments
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function switchTab(event, tabId) {
+    event.preventDefault();
+    
+    // Hide all tab content panel panels
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.replace('block', 'hidden');
+    });
+    
+    // Deactivate styling on all tab trigger buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-400');
+        btn.classList.add('border-transparent', 'text-gray-400');
+    });
+    
+    // Reveal current target panel
+    document.getElementById(tabId).classList.replace('hidden', 'block');
+    
+    // Apply active highlight styling to the clicked tab element
+    event.currentTarget.classList.remove('border-transparent', 'text-gray-400');
+    event.currentTarget.classList.add('border-blue-500', 'text-blue-400');
+}
+</script>
+{% endblock %}

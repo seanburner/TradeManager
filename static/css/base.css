@@ -1,0 +1,82 @@
+/* Container framework */
+.profile-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Remove default browser details/summary arrows */
+.profile-dropdown summary::-webkit-details-marker {
+    display: none;
+}
+.profile-button {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    list-style: none; /* Removes arrow in Firefox */
+    gap: 6px;
+}
+
+/* Profile Image Styling */
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e0e0e0;
+    transition: border-color 0.2s ease;
+}
+
+.profile-button:hover .profile-pic {
+    border-color: #007bff; /* Primary theme color change on hover */
+}
+
+.dropdown-arrow {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Floating Menu Card */
+.profile-dropdown .dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 8px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    list-style: none;
+    padding: 6px 0;
+    min-width: 160px;
+    z-index: 1000;
+}
+
+/* Dropdown Links */
+.profile-dropdown .dropdown-menu a {
+    display: block;
+    padding: 10px 16px;
+    color: #333333;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: background-color 0.15s ease;
+}
+
+.profile-dropdown .dropdown-menu a:hover {
+    background-color: #f5f5f5;
+}
+
+/* Specific Style for Logout Action */
+.profile-dropdown .dropdown-menu a.logout-link {
+    color: #dc3545; /* Muted Danger Red */
+}
+
+.profile-dropdown .dropdown-menu a.logout-link:hover {
+    background-color: #fff5f5;
+}
+
+/* Structural Divider Line */
+.dropdown-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 6px 0;
+}

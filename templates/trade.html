@@ -1,176 +1,121 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradeManager | Execution Room</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-</head>
-<body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex flex-col">
+{% extends "base.html" %}
 
- <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <span class="text-xl font-bold tracking-wider text-indigo-400">TradeManager</span>
-            <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded font-mono">v1.0.0</span>
-        </div>
-  
-  <nav class="bg-gray-800 border-b border-gray-700 px-6 py-3 flex justify-between items-center shrink-0">
-        <div class="flex items-center space-x-4">            
-            <div class="space-x-2 text-sm">
-                <a href="/dashboard" class="text-gray-400 hover:text-white px-2 py-1 rounded">Dashboard</a>
-                <a href="/trade" class="bg-indigo-600 text-white px-3 py-1 rounded font-medium">Trade Room</a>
-            </div>
-        </div>
+{% block title %}Execution Room{% endblock %}
+
+{% block content %}
+
+
+<div class="flex-1 flex flex-col overflow-hidden bg-gray-950 p-4 space-y-4">
     
-    </nav>
+    <div class="w-full bg-gray-800 border border-gray-700 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4 shrink-0">
         
         <div class="flex items-center space-x-4">
-            <div class="text-right">
-                <p class="text-sm font-semibold text-gray-200">
-                    {{ user.username if user.username else (user.email.split('@')[0] if user.email else 'Trader') }}
-                </p>
-                <p class="text-xs text-gray-400 font-mono">{{ user.email if user.email else 'No email linked' }}</p>
-            </div>
-            <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white uppercase border border-indigo-400">
-                {{ user.username[0] if user.username else 'T' }}
-            </div>
-            <a href="/auth/logout" class="text-xs bg-gray-700 hover:bg-red-900 text-gray-300 hover:text-white px-3 py-2 rounded transition font-medium">
-                Logout
-            </a>
+            <table >
+                <thead class="w-full shrink-0">
+                    <tr class="flex w-full border-b border-gray-700 bg-gray-900/50 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+                        <th class="p-3 font-mono flex-1 truncate w-45">ID</th> <th class="p-3 font-mono flex-1 truncate w-45">DateTime</th>
+                            <th class="p-3 font-mono flex-1 truncate w-45">TYPE</th> <th class="p-3 font-mono flex-1 truncate w-45">ASSET</th>
+                            <th class="p-3 font-mono flex-1 truncate w-45">ENTRY</th> <th class="p-3 font-mono flex-1 truncate w-45">PnL</th>
+                            <th "p-3 font-mono flex-1 truncate w-45">STATUS</th>
+                    </tr>
+                </thead>
+                <tbody  class="w-full flex flex-col overflow-y-auto max-h-[50px] divide-y divide-gray-700/50 [scrollbar-width:thin] [scrollbar-color:#4b5563_#1f2937]" >
+                    {% for row in tradeLog %}
+                        <tr class="flex w-full hover:bg-gray-700/30 transition-colors">
+                        {% for cell in row %}
+                         <td class="p-3 font-mono flex-1 truncate w-52 text-center"> {{cell}} </td>
+                        {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </nav>
-
-
-    <div class="flex flex-1 overflow-hidden">
+        <div>
+            <button type="button" id="stageExecutionBtn" onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm px-5 py-2.5 rounded transition-colors shadow-lg">
+                New Order
+            </button>
+        </div>
         
-        <aside class="w-80 bg-gray-800 border-r border-gray-700 p-4 space-y-6 flex flex-col justify-between overflow-y-auto">
-            <div class="space-y-5">
-                
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Target Asset</label>
-                    <select id="assetSelector" onchange="changeTicker(this.value)" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white font-mono focus:ring-2 focus:ring-indigo-500">
-                        {% for asset in assets %}
-                            <option value="{{ asset }}">{{ asset }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+    </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Execution Strategy</label>
-                    <select id="strategySelector" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white font-medium focus:ring-2 focus:ring-indigo-500">
-                        {% for strategy in strategies %}
-                            <option value="{{ strategy }}">{{ strategy }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="space-y-3 bg-gray-900/50 p-3 rounded-lg border border-gray-700/60">
-                    <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-tight">Predefined Plan Entry Points</h4>
-                    
-                    <div>
-                        <label class="text-[10px] text-gray-400 font-mono block mb-1">Target Entry Trigger</label>
-                        <input type="text" placeholder="e.g., 5035.25" class="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-sm font-mono text-white">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-gray-400 font-mono block mb-1">Stop Loss / Max Risk Limit</label>
-                        <input type="text" placeholder="e.g., 5010.00" class="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-sm font-mono text-white">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-gray-400 font-mono block mb-1">Target Premium Credit / Exit</label>
-                        <input type="text" placeholder="e.g., 2.25 credit" class="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-sm font-mono text-white">
-                    </div>
-                </div>
-
+    <div class="flex-1 flex flex-row w-full h-full bg-gray-800 border border-gray-700 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4 shrink-0">
+       <div>
+            <label for="assetSelector" class="block text-xs text-gray-400 font-medium mb-1">Asset
+                <select id="assetSelector" onchange="changeTicker(this.value)" class="bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                    {% for asset in assets %}
+                    <option value="{{ asset }}">{{ asset }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        
+        <div id="tradingview_chart_frame" class="w-full h-[65vh]">
             </div>
-
-            <div class="pt-4 border-t border-gray-700">
-                <button type="button" id="stageExecutionBtn" onclick="openModal()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg transition text-sm tracking-wide shadow-md">
-                    Stage Execution Blueprint
-                </button>
-                <p class="text-[10px] text-center text-gray-500 mt-2 font-mono">Payload parameters routed locally</p>
-            </div>
-        </aside>
-
-        <main class="flex-1 bg-gray-950 relative">
-            <div id="tradingview_chart_frame" class="absolute inset-0 w-full h-full"></div>
-        </main>
-
     </div>
 
 
-<div id="executionModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-gray-800 border border-gray-700 w-full max-w-md rounded-xl p-6 shadow-2xl space-y-6">
+
+    <div id="executionModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 border border-gray-700 w-full max-w-md rounded-xl p-6 shadow-2xl space-y-6">
         
-        <div class="flex justify-between items-start">
-            <div>
-                <h3 class="text-xl font-bold text-gray-100 flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                    Stage Order Parameters
-                </h3>
-                <p class="text-xs text-gray-400 mt-0.5">Confirm parameters before payload transmission</p>
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-100 flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Stage Order Parameters
+                    </h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Confirm parameters before payload transmission</p>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-lg font-bold font-mono bg-gray-900/50 hover:bg-gray-900 h-7 w-7 rounded-lg border border-gray-700/60 flex items-center justify-center">&times;</button>
             </div>
-            <button onclick="closeModal()" class="text-gray-400 hover:text-white text-lg font-bold font-mono bg-gray-900/50 hover:bg-gray-900 h-7 w-7 rounded-lg border border-gray-700/60 flex items-center justify-center">&times;</button>
-        </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-700/50">
-                <span class="block text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Active Ticker</span>
-                <span id="modalAsset" class="text-lg font-bold font-mono text-indigo-400">-</span>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-900 p-3 rounded-lg border border-gray-700/50">
+                    <span class="block text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Active Ticker</span>
+                    <span id="modalAsset" class="text-lg font-bold font-mono text-indigo-400">-</span>
+                </div>
+                <div class="bg-gray-900 p-3 rounded-lg border border-gray-700/50">
+                    <span class="block text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Live Spot Price</span>
+                    <span id="modalSpot" class="text-lg font-bold font-mono text-green-400">Loading...</span>
+                </div>
             </div>
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-700/50">
-                <span class="block text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Live Spot Price</span>
-                <span id="modalSpot" class="text-lg font-bold font-mono text-green-400">Loading...</span>
-            </div>
-        </div>
 
-        <div class="space-y-3 font-mono text-sm bg-gray-900/30 p-4 rounded-lg border border-gray-700/40">
-            <div class="flex justify-between border-b border-gray-700/50 pb-2">
-                <span class="text-gray-400">Selected Strategy:</span>
-                <span id="modalStrategy" class="font-bold text-white">-</span>
+            <div class="space-y-3 font-mono text-sm bg-gray-900/30 p-4 rounded-lg border border-gray-700/40">
+                <div class="flex justify-between border-b border-gray-700/50 pb-2">
+                    <span class="text-gray-400">Selected Strategy:</span>
+                    <span id="modalStrategy" class="font-bold text-white">-</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-700/50 pb-2">
+                    <span class="text-gray-400">Target Entry:</span>
+                    <span id="modalEntry" class="text-gray-200">-</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-700/50 pb-2">
+                    <span class="text-gray-400">Stop Loss:</span>
+                    <span id="modalStop" class="text-red-400 font-semibold">-</span>
+                </div>
+                <div class="flex justify-between pt-1">
+                    <span class="text-gray-400">Target Premium:</span>
+                    <span id="modalPremium" class="text-green-400 font-semibold">-</span>
+                </div>
             </div>
-            <div class="flex justify-between border-b border-gray-700/50 pb-2">
-                <span class="text-gray-400">Target Entry:</span>
-                <span id="modalEntry" class="text-gray-200">-</span>
-            </div>
-            <div class="flex justify-between border-b border-gray-700/50 pb-2">
-                <span class="text-gray-400">Stop Loss:</span>
-                <span id="modalStop" class="text-red-400 font-semibold">-</span>
-            </div>
-            <div class="flex justify-between pt-1">
-                <span class="text-gray-400">Target Premium:</span>
-                <span id="modalPremium" class="text-green-400 font-semibold">-</span>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-2">
-            <button onclick="closeModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium py-2 rounded-lg transition text-sm">
-                Cancel
-            </button>
-            <button onclick="submitToSchwab()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition text-sm shadow-lg shadow-green-900/20">
-                Transmit Order
-            </button>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium py-2 rounded-lg transition text-sm">
+                    Cancel
+                </button>
+                <button onclick="submitToSchwab()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition text-sm shadow-lg shadow-green-900/20">
+                    Transmit Order
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 
+{% endblock %}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+{% block scripts %}
     <script type="text/javascript">
         let chartInstance = null;
         let currentSymbol = "SPY";
@@ -272,9 +217,9 @@
 
             try {
                 const asset = document.getElementById("assetSelector").value;
-                const strategy = document.getElementById("strategySelector").value;
+                const strategy = "None" //document.getElementById("strategySelector").value;
                 
-                const inputs = document.querySelectorAll('input[placeholder*="e.g."]');
+                const inputs = "None" //document.querySelectorAll('input[placeholder*="e.g."]');
                 const entryTrigger = inputs[0]?.value || "Not Set";
                 const stopLoss = inputs[1]?.value || "Not Set";
                 const premiumTarget = inputs[2]?.value || "Not Set";
@@ -317,6 +262,5 @@
             initChart(initialSymbol);
         });
     </script>
+{% endblock %}
 
-</body>
-</html>

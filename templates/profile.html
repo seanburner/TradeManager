@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6 text-white">Profile</h1>
+    
+    <div class="border-b border-gray-700 mb-6">
+        <nav class="flex space-x-4" aria-label="Tabs">
+            <button onclick="switchTab(event, 'detail-tab')" class="tab-btn px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-400 focus:outline-none" data-target="detail-tab">
+                User Details
+            </button>
+            <button onclick="switchTab(event, 'pix-tab')" class="tab-btn px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-400 focus:outline-none" data-target="pix-tab">
+                Profile Pic 
+            </button>            
+            <button onclick="switchTab(event, 'password-tab')" class="tab-btn px-4 py-2 font-medium text-sm border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-400 focus:outline-none" data-target="password-tab">
+                Change Password
+            </button>            
+        </nav>
+    </div>
+    
+    <div id="detail-tab" class="tab-panel block">
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
+            <div class="border-b border-gray-700 mb-6">
+                <form action="/profile/detail/update" method="POST" class="space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Email Address
+                                <input type="email" name="email" value="{{ user.email if user else '' }}" disabled class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-not-allowed">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">First Name
+                                <input id="firstName" type="firstName" name="firstName" value="{{ user.firstName if user else '' }}"   class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-allowed">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Last Name
+                                <input type="lastName" name="lastName" value="{{ user.lastName if user else '' }}"      class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-allowed">
+                            </label>                           
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Created
+                                <input type="createDate" name="createDate" value="{{ user.createdDate if user else '' }}" disabled class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-not-allowed">
+                            </label>                    
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Modified
+                                <input type="modDate" name="modDate" value="{{ user.modDate if user else '' }}" disabled class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-not-allowed">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow transition duration-150 ease-in-out">
+                            Save Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="pix-tab" class="tab-panel hidden">
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
+            <div class="border-b border-gray-700 mb-6">
+                <form action="/profile/detail/update" method="POST" class="space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            
+                            <label  for="profile_pix" class="block text-sm font-medium text-gray-300 mb-1">Profile Pix
+                                <select id="profile_pix"   onchange="changeProfilePix(this.value)" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-not-allowed">
+                                    {% for pix_name,pix in profile_pix.items() %}                            
+                                        <option value="{{ pix }}">{{ pix_name }}</option>
+                                    {% endfor %}                                    
+                                </select>
+                            </label>
+                            <br>
+                            <div  class="mb-6 w-50 h-50 overflow-auto" >
+                                <img id="profile-preview" class="mb-6 w-[35vh] h-[25vh]"
+                                    src="{{ url_for('static', path=user.pix ) or  'https://via.placeholder.com/40' }}" 
+                                    alt="Profile" 
+                                    class="profile-pic" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow transition duration-150 ease-in-out">
+                            Update Pic
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="password-tab" class="tab-panel hidden">
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700 shadow-md">
+            <div class="border-b border-gray-700 mb-6">
+                <form action="/profile/pix/update" method="POST" class="space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Current Password
+                                <input type="password" name="current_password"  placeholder="••••••••••••••••"  class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-allowed">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">New Password
+                                <input type="password" name="new_password"  placeholder="••••••••••••••••"  class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-allowed">
+                            </label>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Confirm Password
+                                <input type="password" name="confirm_password"  placeholder="••••••••••••••••"  class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-gray-400 cursor-allowed">
+                            </label>                                        
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow transition duration-150 ease-in-out">
+                            Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<script>
+    function switchTab(event, tabId) {
+        event.preventDefault();
+    
+        // Hide all tab content panel panels
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.replace('block', 'hidden');
+        });
+    
+        // Deactivate styling on all tab trigger buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('border-blue-500', 'text-blue-400');
+            btn.classList.add('border-transparent', 'text-gray-400');
+        });
+    
+        // Reveal current target panel
+        document.getElementById(tabId).classList.replace('hidden', 'block');
+    
+        // Apply active highlight styling to the clicked tab element
+        event.currentTarget.classList.remove('border-transparent', 'text-gray-400');
+        event.currentTarget.classList.add('border-blue-500', 'text-blue-400');
+    }
+    function changeProfilePix(selectedVal) {
+        const input = event.target;
+
+        const previewImg = document.getElementById('profile-preview');
+        if (previewImg) {
+           // Update the src attribute with the local file's data URL
+            previewImg.src =selectedVal;
+        }
+        
+    }
+</script>
+{% endblock %}

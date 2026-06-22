@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
 import httpx
 
-from app.database import get_db
-from app import models, security
-from app.config import settings
+from datetime           import datetime
+from fastapi            import APIRouter, Depends, HTTPException, status
+from fastapi.responses  import RedirectResponse
+from sqlalchemy         import or_
+from sqlalchemy.orm     import Session
+from app                import models, security
+from app.config         import settings
+from app.database       import get_db
 
 router = APIRouter(prefix="/auth/google", tags=["Google Auth"])
 
@@ -79,17 +80,35 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
     ).first()
 
     if not member:
+        # Optional: If you want to automatically CREATE an account for new users now:
+         member = models.User(email=email, google_id=google_id,
+                              active=True,createdBy='viewer',modBy='viewer',createdDate=datetime.now(),modDate=datetime.now())
+         db.add(member)
+         db.commit()
+         db.refresh(member)
         # Since the 'viewer' user cannot create accounts, reject unknown identities
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Your Google identity is not registered on this platform.",
-        )
+        #raise HTTPException(
+        #    status_code=status.HTTP_401_UNAUTHORIZED,
+        #    detail="Your Google identity is not registered on this platform.",
+        #)
 
     # 4. If the user matched via email but doesn't have the google_id column stamped yet,
     # note that your 'viewer' account cannot write this update back directly.
     if not member.google_id:
-        # Optional: Log that the account exists locally but lacks the explicit ID link.
-        pass
+        try:
+            member.google_id = google_id
+            member.modBy     ='viewer'
+            member.modDate   = datetime.now()
+            db.commit()
+            db.refresh(member)
+        except Exception as e:
+            db.rollback()
+            # Log the error but potentially allow the login to proceed if you don't want to block them,
+            # or raise a 500 if DB consistency is critical right here.
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to bind Google identity to local account configuration: {str(e)}"
+            )
 
     if not member.active:
         raise HTTPException(status_code=400, detail="Inactive account status.")

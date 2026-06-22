@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeManager | {% block title %}Workspace{% endblock %}</title>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/base.css') }}" >
+    <link rel="icon" type="image/png" href="{{ url_for('static', path='img/bar_graph_005.png') }}" >
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+ <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-xl font-bold tracking-wider text-indigo-400">TradeManager</span>
+            <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded font-mono">v1.0.0</span>
+        </div>
+  
+  <nav class="bg-gray-800 border-b border-gray-700 px-6 py-3 flex justify-between items-center shrink-0">
+        <div class="flex items-center space-x-4">            
+            <div class="space-x-2 text-sm">
+                <a href="/dashboard"    class="px-3 py-1.5 rounded transition-colors {% if request.url.path == '/dashboard' %}bg-indigo-600 text-white font-medium{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">   Dashboard</a>
+                <a href="/trade"        class="px-3 py-1.5 rounded transition-colors {% if request.url.path == '/trade' %}bg-indigo-600 text-white font-medium{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">       Trade Room</a>
+            </div>
+        </div>
+   </nav>     
+        <div class="flex items-center space-x-4">
+            <div class="text-right">
+                <p class="text-sm font-semibold text-gray-200">
+                    {{ user.username if user.username else (user.email.split('@')[0] if user.email else 'Trader') }}
+                </p>
+                <p class="text-xs text-gray-400 font-mono">{{ user.email if user.email else 'No email linked' }}</p>
+            </div>
+
+            <div class="profile-dropdown-container">
+                <details class="profile-dropdown">
+                    <summary class="profile-button" aria-haspopup="menu" aria-label="User menu">
+                        <img src="{{ url_for('static', path=user.pix ) or  'https://via.placeholder.com/40' }}" 
+                             alt="Profile" 
+                             class="profile-pic" />
+                            <span class="dropdown-arrow">&#9662;</span>
+                    </summary>
+        
+                    <ul class="dropdown-menu" role="menu">
+                        <li role="none">
+                            <a href="/profile" role="menuitem">
+                                <i class="icon-user"></i> My Profile 
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="/user_settings" role="menuitem">
+                                <i class="icon-settings"></i> Settings
+                            </a>
+                        </li>
+                        <li class="dropdown-divider" role="separator"></li>
+                        <li role="none">
+                            <a href="/logout" class="logout-link" role="menuitem">
+                                <i class="icon-logout"></i> Log Out
+                            </a>
+                        </li>
+                    </ul>
+                </details>
+            </div>
+        </div>
+
+    
+    </nav>
+
+
+
+
+
+    <main class="flex-1 flex">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

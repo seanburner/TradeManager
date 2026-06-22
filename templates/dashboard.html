@@ -1,55 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradeManager | Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-900 text-gray-100 font-sans antialiased">
+{% extends "base.html" %}
 
-    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <span class="text-xl font-bold tracking-wider text-indigo-400">TradeManager</span>
-            <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded font-mono">v1.0.0</span>
-        </div>
+{% block title %}Execution Room{% endblock %}
 
-  <nav class="bg-gray-800 border-b border-gray-700 px-6 py-3 flex justify-between items-center shrink-0">
-        <div class="flex items-center space-x-4">            
-            <div class="space-x-2 text-sm">
-                <a href="/dashboard" class="bg-indigo-600 text-white px-3 py-1 rounded font-medium">Dashboard</a>
-                <a href="/trade"     class="text-gray-400 hover:text-white px-2 py-1 rounded">      Trade Room</a>
-            </div>
-        </div>
-        
-    </nav>
-        
-        <div class="flex items-center space-x-4">
-            <div class="text-right">
-                <p class="text-sm font-semibold text-gray-200">
-                    {{ user.username if user.username else (user.email.split('@')[0] if user.email else 'Trader') }}
-                </p>
-                <p class="text-xs text-gray-400 font-mono">{{ user.email if user.email else 'No email linked' }}</p>
-            </div>
-            <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white uppercase border border-indigo-400">
-                {{ user.username[0] if user.username else 'T' }}
-            </div>
-            <a href="/auth/logout" class="text-xs bg-gray-700 hover:bg-red-900 text-gray-300 hover:text-white px-3 py-2 rounded transition font-medium">
-                Logout
-            </a>
-        </div>
-    </nav>
+{% block content %}
 
     <main class="max-w-7xl mx-auto p-6 space-y-6">
         
-        <header class="bg-gradient-to-r from-indigo-900 to-slate-800 rounded-xl p-6 shadow-lg border border-indigo-800/40">
-            <h1 class="text-2xl md:text-3xl font-bold text-white">
-                Welcome back, {{ user.firstName if user.firstName else 'Trader' }}!
-            </h1>
-            <p class="text-indigo-200 text-sm mt-1">
-                Your database link is active. Session ID mapped securely to Member ID: <span class="font-mono text-white underline decoration-indigo-400 bg-gray-900/40 px-1 rounded">{{ user.id }}</span>
-            </p>
-        </header>
+
 
         <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-gray-800 p-5 rounded-xl border border-gray-700">
@@ -77,10 +34,11 @@
                 </p>
             </div>
         </section>
-
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+<div  class="max-w-7xl mx-auto p-6 space-y-6 h-full  overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#4b5563_#1f2937]">
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6  overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#4b5563_#1f2937]">
             
-            <div class="lg:col-span-2 bg-gray-800 rounded-xl border border-gray-700 p-6 flex flex-col justify-between min-h-[350px]">
+            <div class="lg:col-span-1 bg-gray-800 rounded-xl border border-gray-700 p-6 flex flex-col justify-between min-h-[300px]">
                 <div>
                     <h3 class="text-lg font-bold text-gray-100 border-b border-gray-700 pb-3">Active Workspace</h3>
                     <p class="text-sm text-gray-400 mt-4">
@@ -115,7 +73,7 @@
                     </div>
                     <div class="pt-2 border-t border-gray-700/60">
                         <span class="text-gray-500 block">Record Creation Stamp:</span>
-                        <span class="text-gray-400">{{ user.createDate if user.createDate else 'N/A' }}</span>
+                        <span class="text-gray-400">{{ user.createdDate if user.createdDate else 'N/A' }}  by {{ user.createdBy if user.createdBy else 'System' }}</span>
                     </div>
                     <div>
                         <span class="text-gray-500 block">Last Modification Group:</span>
@@ -173,42 +131,43 @@
                         {% set bg_style = bg_style + " ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-800" %}
                     {% endif %}
 
-                    <div class="min-h-[72px] p-2 rounded-lg border flex flex-col justify-between transition relative group cursor-pointer {{ bg_style }}">
-                        <span class="text-xs font-bold font-mono">{{ day }}</span>
+                                <div class="min-h-[72px] p-2 rounded-lg border flex flex-col justify-between transition relative group cursor-pointer {{ bg_style }}">
+                                    <span class="text-xs font-bold font-mono">{{ day }}</span>
                         
-                        <div class="text-right">
-                            {% if day_pnl is not none and day_pnl != 0 %}
-                                <span class="text-[10px] font-bold font-mono tracking-tight">
-                                    {{ '+' if day_pnl > 0 else '' }}${{ "%.2f"|format(day_pnl) }}
-                                </span>
+                                    <div class="text-right">
+                                        {% if day_pnl is not none and day_pnl != 0 %}
+                                            <span class="text-[10px] font-bold font-mono tracking-tight">
+                                                {{ '+' if day_pnl > 0 else '' }}${{ "%.2f"|format(day_pnl) }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
                             {% endif %}
-                        </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-700/60 flex flex-wrap gap-4 text-xs font-medium text-gray-400">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="h-3 w-3 rounded bg-green-950/40 border border-green-700 block"></span>
+                        <span>Green Day</span>
                     </div>
-
-                {% endif %}
-            {% endfor %}
-        {% endfor %}
-    </div>
-
-    <div class="mt-4 pt-4 border-t border-gray-700/60 flex flex-wrap gap-4 text-xs font-medium text-gray-400">
-        <div class="flex items-center space-x-1.5">
-            <span class="h-3 w-3 rounded bg-green-950/40 border border-green-700 block"></span>
-            <span>Green Day</span>
-        </div>
-        <div class="flex items-center space-x-1.5">
-            <span class="h-3 w-3 rounded bg-red-950/40 border border-red-700 block"></span>
-            <span>Red Day</span>
-        </div>
-        <div class="flex items-center space-x-1.5">
-            <span class="h-3 w-3 rounded bg-gray-700/40 border border-gray-600 block"></span>
-            <span>Flat / Scratch</span>
-        </div>
-    </div>
-</div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="h-3 w-3 rounded bg-red-950/40 border border-red-700 block"></span>
+                        <span>Red Day</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="h-3 w-3 rounded bg-gray-700/40 border border-gray-600 block"></span>
+                        <span>Flat / Scratch</span>
+                    </div>
+                </div>
+            </div>
 
             
         </section>
+</div>        
     </main>
 
-</body>
-</html>
+{% endblock %}
+

@@ -21,10 +21,12 @@ import httpx
 
 import yfinance as yf
 
-from datetime               import datetime
+from pathlib                import Path
+from datetime               import datetime, timezone
 from sqlalchemy.orm         import Session
 
-from fastapi                import FastAPI, Request, HTTPException, Depends  # <--- ADD Depends HERE
+from fastapi                import FastAPI, Request, HTTPException, Depends 
+from fastapi.staticfiles    import StaticFiles
 from fastapi.responses      import HTMLResponse, RedirectResponse
 from fastapi.templating     import Jinja2Templates
 from fastapi.staticfiles    import StaticFiles
@@ -64,10 +66,11 @@ exit
 # Create the FastAPI instance
 app = FastAPI(title="Unified Auth App")
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # CRITICAL: This links the file paths together
 app.include_router(auth_local.router)
 app.include_router(auth_google.router)
-
 # Setup basic logging to see exactly why it's failing in the console
 logger = logging.getLogger("uvicorn.error")
 templates = Jinja2Templates(directory="templates")
@@ -76,11 +79,30 @@ templates = Jinja2Templates(directory="templates")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
+
+
 # Catch-all route for the root domain
 @app.get("/")
 async def root():
     """Redirects root traffic to the login page so you don't get a 404."""
     return RedirectResponse(url="/login")
+
+
+
+@app.get("/logout")
+def logout(response: RedirectResponse):
+    """
+    Clears the authentication token cookie and redirects the user safely 
+    back to the login framework landing gate.
+    """
+    # Create a redirect response back to your local login page
+    response = RedirectResponse(url="/login", status_code=303)
+    
+    # Delete the JWT/session cookie completely
+    # Change "access_token" to match the exact cookie key name you used in auth_local/auth_google
+    response.delete_cookie(key="access_token", path="/")
+    
+    return response
 
 # The unified login page endpoint
 @app.get("/login", response_class=HTMLResponse)
@@ -88,17 +110,25 @@ async def get_login_page(request: Request):
     """Renders the unified login page."""
     return templates.TemplateResponse(request=request, name="login.html")
 
-# Placeholder routers for the next steps (Commented out until files are populated)
-# from app.routers import auth_google, auth_local
-# app.include_router(auth_local.router)
-# app.include_router(auth_google.router)
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def read_dashboard(request: Request, db: Session = Depends(get_db)):
+
+
+def CheckToken( request: Request, pageName : str,db: Session = Depends(get_db)) -> (int , object ) :
+    """
+        Check if the token is good , if not redirect , this is reuseable functionality
+        PARAMETERS :
+                        request  [Request] - request session of page
+                        pageName [ str ]   - name of page called from
+                        db       [ Session] - connection to database  
+        RETURNS    :
+                        int - id for the current user 
+    """
+    user_id = -1 
+    member  = None 
     # 1. Grab the raw cookie
     token_cookie = request.cookies.get("access_token")
     if not token_cookie:
-        logger.warning("Dashboard access rejected: No access_token cookie found.")
+        logger.warning(f"{pageName} access rejected: No access_token cookie found.")
         return RedirectResponse(url="/login")
     
         
@@ -114,30 +144,37 @@ async def read_dashboard(request: Request, db: Session = Depends(get_db)):
         user_id: str = payload.get("sub")
         
         if user_id is None:
-            logger.warning("Dashboard access rejected: JWT payload missing 'sub' claim.")
+            logger.warning(f"{pageName} access rejected: JWT payload missing 'sub' claim.")
             raise HTTPException(status_code=401, detail="Invalid session token payload.")
-            
+        
+        #4. Get the member information based on user_id 
+        member = db.query(models.User).filter(models.User.id == user_id).first()
+        if not member:
+            logger.warning(f"{pageName} access rejected: User ID {user_id} not found in database.")
+            raise HTTPException(status_code=401, detail=f"User profile mismatch. {member}")
     except jwt.ExpiredSignatureError:
         #logger.warning("Dashboard access rejected: JWT token has expired.")
         #raise HTTPException(status_code=401, detail="Session expired.")
-        logger.warning("Dashboard access rejected: JWT token has expired")
-        return RedirectResponse(url="/login")
+        logger.warning(f"{pageName}  access rejected: JWT token has expired")        
     except jwt.PyJWTError as e:
-        logger.warning(f"Dashboard access rejected: JWT decoding failed: {str(e)}")
+        logger.warning(f"{pageName}  access rejected: JWT decoding failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid session verification.")
+    
+    
+    return user_id, member
 
-    # 4. Fetch the member row context
-    member = db.query(models.User).filter(models.User.id == user_id).first()
-    if not member:
-        logger.warning(f"Dashboard access rejected: User ID {user_id} not found in database.")
-        raise HTTPException(status_code=401, detail="User profile mismatch.")
 
-    # 5. Serve the layout template
-    #return templates.TemplateResponse(
-    #    request=request, 
-    #    name="dashboard.html", 
-    #    context={"user": member}
-    #)
+@app.get("/dashboard", response_class=HTMLResponse)
+async def read_dashboard(request: Request, db: Session = Depends(get_db)):
+    user_id     = -1
+    member      = None
+    pageName    = "Dashboard"
+    
+    user_id , member = CheckToken( request = request, pageName=pageName, db=db) 
+    if int(user_id) < 0 :
+        return RedirectResponse(url="/login")
+
+
     # 1. Get current date context
     now = datetime.now()
     year = now.year
@@ -160,49 +197,97 @@ async def read_dashboard(request: Request, db: Session = Depends(get_db)):
 
     # 3. Return template with full time context
     return templates.TemplateResponse(
-        request=request,
-        name="dashboard.html",
-        context={
-            "user": member,
-            "month_days": month_days,
-            "month_name": month_name,
-            "year": year,
-            "current_day": now.day,
-            "pnl_data": mock_pnl
+        request = request,          # Pass it explicitly as a keyword argument
+        name    = f"{pageName.lower()}.html",    # Pass the name explicitly
+        context = {
+            "request"       : request,
+            "user"          : member,
+            "month_days"    : month_days,
+            "month_name"    : month_name,
+            "year"          : year,
+            "current_day"   : now.day,
+            "pnl_data"      : mock_pnl
         }
     )
 
 
 @app.get("/trade", response_class=HTMLResponse)
 async def trade_room(request: Request, db: Session = Depends(get_db)):
-    # 1. Reuse your existing cookie validation to extract user identity context
-    token_cookie = request.cookies.get("access_token")
-    if not token_cookie:
-        logger.warning("TradeRoom access rejected: No access_token cookie found.")
+    user_id         = "-1"
+    member          = None
+    pageName        = "Trade"
+    date_format     = "%Y-%m-%d %H:%M:%S"
+    
+    user_id , member = CheckToken( request = request, pageName= pageName, db=db)    
+    if int(user_id) < 0 :
         return RedirectResponse(url="/login")
         
-    try:
-        token = token_cookie.replace("Bearer ", "", 1) if token_cookie.startswith("Bearer ") else token_cookie
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        user_id = payload.get("sub")
-    except Exception:
-        return RedirectResponse(url="/login")
-
-    member = db.query(models.User).filter(models.User.id == user_id).first()
     
     # Define variables for selectors
-    assets = ["SPY", "SPX", "ESM26"] # Map ESM26 to TradingView futures symbology
-    strategies = ["Scalp", "Iron Condor", "Butterfly", "Call Spread", "Put Spread"]
+    assets      = ["SPY", "SPX", "ESM26"] # Map ESM26 to TradingView futures symbology
+    strategies  = ["Scalp", "Iron Condor", "Butterfly", "Call Spread", "Put Spread"]
+    tradeLog    = [["adf",(datetime.now(timezone.utc)).strftime(date_format),"Scalp","SPY","742","100.00","Completed"],
+                   ["bdf",(datetime.now(timezone.utc)).strftime(date_format),"Scalp","SPY","742","100.00","Completed"],
+                   ["cdf",(datetime.now(timezone.utc)).strftime(date_format),"Put Spread","SPX","7450/7435","325.00","Pending"],
+                   ["ddf",(datetime.now(timezone.utc)).strftime(date_format),"Call Spread","SPX","7550/7565","225.00","Pending"] ]
+
+    return templates.TemplateResponse(
+        request = request,
+        name    = f"{pageName.lower()}.html",
+        context = {
+            "user": member,
+            "assets": assets,
+            "strategies": strategies,
+            "tradeLog" : tradeLog
+        }
+    )
+
+@app.get("/profile", response_class=HTMLResponse)
+async def user_profile(request: Request, db: Session = Depends(get_db)):
+    user_id         = "-1"
+    member          = None
+    fileExt         =".png"
+    dirPath         = "static/img/profiles"
+    pageName        = "Profile"
+    profilePix      = { f.stem:f  for f in Path(dirPath).iterdir()  if f.suffix ==fileExt }
+    profilePixExt   = { 'Default': 'https://via.placeholder.com/40' }
+    
+    # Verify auth/token checks using your existing custom pipeline layout
+    user_id, member = CheckToken(request=request, pageName=pageName, db=db) 
+    if int(user_id) < 0:
+        return RedirectResponse(url="/login")
+
+    profilePix.update( profilePixExt)
+
+    return templates.TemplateResponse(
+        request = request,
+        name    = f"{pageName.lower()}.html",
+        context = {            
+            "user"          : member,
+            "profile_pix"   : profilePix
+        },
+    )
+
+
+
+@app.get("/user_settings", response_class=HTMLResponse)
+async def read_settings(request: Request, db: Session = Depends(get_db)):
+    user_id         = "-1"
+    member          = None
+
+    # Verify auth/token checks using your existing custom pipeline layout
+    user_id, member = CheckToken(request=request, pageName="User_Settings", db=db) 
+    if int(user_id) < 0:
+        return RedirectResponse(url="/login")
 
     return templates.TemplateResponse(
         request=request,
-        name="trade.html",
-        context={
-            "user": member,
-            "assets": assets,
-            "strategies": strategies
-        }
+        name="user_settings.html",
+        context={            
+            "user": member
+        },
     )
+
 
 @app.get("/api/quote/{symbol}")
 async def get_spot_price(symbol: str):
@@ -278,13 +363,13 @@ async def get_option_chain(symbol: str):
     """
     Obtain the 0dte option chain for the symbol provided     
     """
-    #ticker_map = {
-    #    "SPY": "SPY",
-    #    "SPX": "^GSPC",   # Google Finance uses .INX for the S&P 500 Index
-    #    "ESM26": "ESM26.CME"  # Continuous front-month proxy
-    #}
+    ticker_map = {
+        "SPY": "SPY",
+        "SPX": "^SPX",   # Google Finance uses .INX for the S&P 500 Index
+        "ESM26": "ESM26.CME"  # Continuous front-month proxy
+    }
     
-    target_ticker = Ticker_Map.get(symbol.upper(), symbol)    
+    target_ticker = ticker_map.get(symbol.upper(), symbol)    
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -292,12 +377,13 @@ async def get_option_chain(symbol: str):
     async with httpx.AsyncClient(http2=True) as client:                
         try:
             #1. Create a Ticker object for SPY
-            yfAsset = yf.Ticker(target_ticker)
+            yfAsset = yf.Ticker("^SPX")#target_ticker)
+            print(yfAsset.options)
 
             # 2. View available expiration dates
             print( f"[DEBUG] {yfAsset }")
-            if not yfAssets.options:
-                return {"symbol": symbol, "spot_price": float( 0.00), "fallback": True}  # Change for the option chain
+            #if not yfAssets.options:
+            #    return {"symbol": symbol, "spot_price": float( 0.00), "fallback": True}  # Change for the option chain
             
             print("Available Expirations:", yfAsset.options)
 
