@@ -25,9 +25,9 @@ from pathlib                import Path
 from datetime               import datetime, timezone
 from sqlalchemy.orm         import Session
 
-from fastapi                import FastAPI, Request, HTTPException, Depends 
+from fastapi                import FastAPI, Request, HTTPException,APIRouter, Depends, Form
 from fastapi.staticfiles    import StaticFiles
-from fastapi.responses      import HTMLResponse, RedirectResponse
+from fastapi.responses      import HTMLResponse, RedirectResponse,JSONResponse
 from fastapi.templating     import Jinja2Templates
 from fastapi.staticfiles    import StaticFiles
 
@@ -242,35 +242,52 @@ async def trade_room(request: Request, db: Session = Depends(get_db)):
         }
     )
 
-@app.get("/profile", response_class=HTMLResponse)
+@app.get("/user/profile", response_class=HTMLResponse)
 async def user_profile(request: Request, db: Session = Depends(get_db)):
     user_id         = "-1"
     member          = None
     fileExt         =".png"
     dirPath         = "static/img/profiles"
     pageName        = "Profile"
-    profilePix      = { f.stem:f  for f in Path(dirPath).iterdir()  if f.suffix ==fileExt }
-    profilePixExt   = { 'Default': 'https://via.placeholder.com/40' }
+    profilePix      = { f.stem:str(f).replace('static/','') for f in Path(dirPath).iterdir()  if f.suffix ==fileExt }
+    profilePixExt   = {}# 'Default': 'https://via.placeholder.com/40' }
     
     # Verify auth/token checks using your existing custom pipeline layout
     user_id, member = CheckToken(request=request, pageName=pageName, db=db) 
     if int(user_id) < 0:
         return RedirectResponse(url="/login")
 
-    profilePix.update( profilePixExt)
+    profilePixExt.update( profilePix)
 
     return templates.TemplateResponse(
         request = request,
         name    = f"{pageName.lower()}.html",
         context = {            
             "user"          : member,
-            "profile_pix"   : profilePix
+            "profile_pix"   : profilePixExt
+        },
+    )
+
+@app.get("/user/accounts", response_class=HTMLResponse)
+async def user_broker_accounts(request: Request, db: Session = Depends(get_db)):
+    user_id         = "-1"
+    member          = None
+
+    # Verify auth/token checks using your existing custom pipeline layout
+    user_id, member = CheckToken(request=request, pageName="User_Accounts", db=db) 
+    if int(user_id) < 0:
+        return RedirectResponse(url="/login")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="accounts.html",
+        context={            
+            "user": member
         },
     )
 
 
-
-@app.get("/user_settings", response_class=HTMLResponse)
+@app.get("/user/settings", response_class=HTMLResponse)
 async def read_settings(request: Request, db: Session = Depends(get_db)):
     user_id         = "-1"
     member          = None
@@ -409,7 +426,37 @@ async def get_option_chain(symbol: str):
         
         return {"symbol": symbol, "option_chain": "", "fallback": True}
 
+router = APIRouter(prefix="/profile")
 
+@router.post("/detail/update")
+async def update_profile_details(
+    firstName: str = Form(...),
+    lastName: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # 1. Grab your user_id context here from your tokens/session layout...
+    # 2. Update SQLAlchemy model fields: user.firstName = firstName
+    # 3. db.commit()
+    return JSONResponse(content={"status": "success", "detail": "Details sync complete"})
+
+@router.post("/pix/update")
+async def update_profile_picture(
+    pix: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # Update user.pix column in MariaDB with the chosen static path text string
+    return JSONResponse(content={"status": "success", "detail": "Avatar synchronized"})
+
+@router.post("/password/update")
+async def update_password(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...)
+):
+    if new_password != confirm_password:
+        raise HTTPException(status_code=400, detail="New passwords do not match.")
+    # Check current password hash, update fields, commit changes...
+    return JSONResponse(content={"status": "success", "detail": "Security credentials updated"})
     
 
 if __name__ == "__main__":

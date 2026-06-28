@@ -10,3 +10,7 @@ grant select,update, insert  on TradeManager.* to 'viewer'@'%' identified by 'no
 
 create table if not exists TradeManager.accountTypes ( id  int auto_increment primary key not null, type  varchar(20) , details varchar(200), active tinyint,  createdBy varchar(20) , createdDate datetime, modBy varchar(20) , modDate datetime);
 insert into accountTypes(type,details,active,createdBy, createdDate,modBy,modDate) values  ( 'Schwab','Schwab live trading account',1,'sean',now(),'sean',now());
+
+
+create table if not exists TradeManager.accounts ( id  int auto_increment primary key not null, member_id int , accountTypeId int not null ,client_id varchar(200), client_secret varchar(200), account_id int , active tinyint,  createdBy varchar(20) , createdDate date
+time, modBy varchar(20) , modDate datetime, add constraint fk_account_accountType_id foreign key(accountTypeId) references accountTypes(id), add constraint fk_account_member_id foreign key(member_id) references members(id));
